@@ -2817,6 +2817,38 @@ static void MyScriptsFolderWatcherCallBack(FNMessage message, OptionBits flags, 
 		[articleController markAllReadByArray:arrayOfFolders withUndo:YES withRefresh:YES];
 }
 
+/* createNewTwitterAccount
+ *
+ */
+-(void)createNewTwitterAccount:(NSString*)username underFolder:(NSInteger)parentId afterChild:(NSInteger)predecessorId
+{
+	
+	// If the folder already exists, just select it.
+	Folder * folder = [db folderFromFeedURL:username];
+	if (folder != nil)
+	{
+		[browserView setActiveTabToPrimaryTab];
+		[foldersTree selectFolder:[folder itemId]];
+		return;
+	}
+
+
+	 //creates locally
+		[db beginTransaction];
+		NSInteger folderId = [db addRSSFolder:username underParent:parentId afterChild:predecessorId subscriptionURL:username];
+		[db commitTransaction];
+        
+		if (folderId != -1)
+		{
+			[foldersTree selectFolder:folderId];
+			if (isAccessible(username))
+			{
+				Folder * folder = [db folderFromID:folderId];
+				[[RefreshManager sharedManager] refreshSubscriptionsAfterSubscribe:[NSArray arrayWithObject:folder] ignoringSubscriptionStatus:NO];
+			}
+		}
+}
+
 /* createNewGoogleReaderSubscription
  * Create a new Open Reader subscription for the specified URL under the given parent folder.
  */

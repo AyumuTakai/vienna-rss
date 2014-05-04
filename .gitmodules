@@ -1,0 +1,3 @@
+[submodule "STTwitter"]
+	path = STTwitter
+	url = https://github.com/nst/STTwitter.git

@@ -142,6 +142,7 @@
 "Enter MSN Spaces User name" = "MSN Spaces のユーザ名入力";
 "Enter Blogspot User name" = "Blogspot のユーザ名入力";
 "Enter Xanga User name" = "Xanga のユーザ名入力";
+"Enter User name of Twitter" = "Twitterのユーザ名入力";
 "Enter URL of RSS feed" = "ニュースフィードの URL を入力";
 "Cannot rename folder" = "フォルダの名称変更ができません";
 "A folder with that name already exists" = "この名前のフォルダがすでに存在します。";

@@ -25,6 +25,9 @@
 #import "Preferences.h"
 #import "GoogleReader.h"
 
+#import <Accounts/Accounts.h>
+#import "STTwitter.h"
+
 // Private functions
 @interface NewSubscription (Private)
 	-(void)loadRSSFeedBundle;
@@ -168,18 +171,36 @@
 	}
 }
 
+- (BOOL)hasTwitterAccount:(NSString*)username
+{
+    // Twitter
+    ACAccountStore* _accountStore = [[ACAccountStore alloc] init];
+    ACAccountType *twitterAccountType = [_accountStore accountTypeWithAccountTypeIdentifier:ACAccountTypeIdentifierTwitter];
+    
+    NSArray* acc = [_accountStore accountsWithAccountType:twitterAccountType];
+    if (acc) {
+        for (ACAccount* account in acc) {
+            NSLog(@"%@",account.username);
+            if ([account.username isEqualToString:username]) {
+                return YES;
+            }
+        }
+    }
+    return NO;
+}
+
 /* doSubscribe
  * Handle the URL subscription button.
  */
 -(IBAction)doSubscribe:(id)sender
 {
 	NSString * feedURLString = [[feedURL stringValue] trim];
-
+    NSString * key = nil;
 	// Format the URL based on the selected feed source.
 	if (sourcesDict != nil)
 	{
 		NSMenuItem * feedSourceItem = [feedSource selectedItem];
-		NSString * key = [feedSourceItem title];
+		key = [feedSourceItem title];
 		NSDictionary * itemDict = [sourcesDict valueForKey:key];
 		NSString * linkName = [itemDict valueForKey:@"LinkTemplate"];
 		if (linkName != nil)
@@ -199,6 +220,21 @@
 		return;
 	}
 
+    // Twitter Account
+    if ([key isEqualToString:@"Twitter"]) {
+        if( ! [self hasTwitterAccount:feedURLString] ){
+            NSRunAlertPanel(NSLocalizedString(@"No Twitter Account title", nil),
+                            NSLocalizedString(@"No Twitter Account body", nil),
+                            NSLocalizedString(@"OK", nil), nil, nil);
+            return;
+        }
+        [[NSApp delegate] createNewTwitterAccount:feedURLString underFolder:parentId afterChild:-1];
+        // Close the window
+        [NSApp endSheet:newRSSFeedWindow];
+        [newRSSFeedWindow orderOut:self];
+        return;
+    }
+    
 	// Validate the subscription, possibly replacing the feedURLString with a real one if
 	// it originally pointed to a web page.
 	feedURLString = [self verifyFeedURL:feedURLString];
