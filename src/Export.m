@@ -102,7 +102,7 @@
 				countExported += [self exportSubscriptionGroup:subTree fromArray:subFolders withGroups:groupFlag];
 			}
 		}
-		else if (IsRSSFolder(folder) || IsGoogleReaderFolder(folder))
+		else if (IsRSSFolder(folder) || IsGoogleReaderFolder(folder) || IsTwitterFolder(folder))
 		{
 			NSString * link = [folder homePage];
 			NSString * description = [folder feedDescription];

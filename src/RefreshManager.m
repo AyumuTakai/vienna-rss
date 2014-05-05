@@ -34,6 +34,9 @@
 #import "NSNotificationAdditions.h"
 #import "VTPG_Common.h"
 
+#import <Accounts/Accounts.h>
+#import "STTwitter.h"
+
 // Singleton
 static RefreshManager * _refreshManager = nil;
 
@@ -161,7 +164,9 @@ static RefreshManager * _refreshManager = nil;
 		{
 			if (![self isRefreshingFolder:folder ofType:MA_Refresh_GoogleFeed] && ![self isRefreshingFolder:folder ofType:MA_ForceRefresh_Google_Feed])
 				[self pumpSubscriptionRefresh:folder shouldForceRefresh:YES];
-		} 
+		} else if (IsTwitterFolder(folder)) {
+			[self forceRefreshSubscriptionForFolders:[[Database sharedDatabase] arrayOfFolders:[folder itemId]]];
+        }
 	}
 }
 
@@ -185,7 +190,12 @@ static RefreshManager * _refreshManager = nil;
 					[self pumpSubscriptionRefresh:folder shouldForceRefresh:NO];
 				}
 			}
-		}	
+		}else if (IsTwitterFolder(folder)){
+			if (!IsUnsubscribed(folder) || ignoreSubStatus)
+			{
+                [self pumpTwitterRefresh:folder shouldForceRefresh:NO];
+            }
+        }
 	}
 }
 
@@ -217,7 +227,7 @@ static RefreshManager * _refreshManager = nil;
 
 - (void)addRSSFoldersIn:(Folder *)folder toArray:(NSMutableArray *)array 
 {
-    if (IsRSSFolder(folder) || IsGoogleReaderFolder(folder)) [array addObject:folder];
+    if (IsRSSFolder(folder) || IsGoogleReaderFolder(folder) || IsTwitterFolder(folder)) [array addObject:folder];
     else
     {
         Database * db = [Database sharedDatabase];
@@ -246,7 +256,7 @@ static RefreshManager * _refreshManager = nil;
 	{
 		if (IsGroupFolder(folder))
 			[self refreshFolderIconCacheForSubscriptions:[[Database sharedDatabase] arrayOfFolders:[folder itemId]]];
-		else if (IsRSSFolder(folder) || IsGoogleReaderFolder(folder))
+		else if (IsRSSFolder(folder) || IsGoogleReaderFolder(folder) || IsTwitterFolder(folder))
 		{
 			[self performSelectorOnMainThread:@selector(refreshFavIcon:) withObject:folder waitUntilDone:NO];
 		}
@@ -261,7 +271,7 @@ static RefreshManager * _refreshManager = nil;
 	
 	// Do nothing if there's no homepage associated with the feed
 	// or if the feed already has a favicon.
-	if ((IsRSSFolder(folder)||IsGoogleReaderFolder(folder)) && ([folder homePage] == nil || [[folder homePage] isBlank] || [folder hasCachedImage]))
+	if ((IsRSSFolder(folder)||IsGoogleReaderFolder(folder)||IsTwitterFolder(folder)) && ([folder homePage] == nil || [[folder homePage] isBlank] || [folder hasCachedImage]))
 	{
 		Database *db = [Database sharedDatabase];
 		@synchronized(db) {
@@ -398,6 +408,67 @@ static RefreshManager * _refreshManager = nil;
 		[folder clearNonPersistedFlag:MA_FFlag_Updating];
 	[[NSNotificationCenter defaultCenter] postNotificationOnMainThreadWithName:@"MA_Notify_FoldersUpdated" object:[NSNumber numberWithInt:[folder itemId]]];
 }
+
+/*
+ *
+ */
+-(void)pumpTwitterRefresh:(Folder *)folder shouldForceRefresh:(BOOL)force
+{
+    NSString* username = [folder name];
+    // Twitter
+    ACAccountStore* accountStore = [[ACAccountStore alloc] init];
+    ACAccountType *twitterAccountType = [accountStore accountTypeWithAccountTypeIdentifier:ACAccountTypeIdentifierTwitter];
+    
+    NSArray* accounts = [accountStore accountsWithAccountType:twitterAccountType];
+    [accountStore release];
+
+    if (accounts) {
+        for (ACAccount* account in accounts) {
+            NSLog(@"%@",account.username);
+            if ([account.username isEqualToString:username]) {
+                // Login
+                STTwitterAPI* _twitter = [STTwitterAPI twitterAPIOSWithAccount:account];
+                [_twitter verifyCredentialsWithSuccessBlock:^(NSString *username) {
+                    // Success
+                    [_twitter getStatusesHomeTimelineWithCount:@"30" sinceID:nil maxID:nil trimUser:[NSNumber numberWithBool:NO] excludeReplies:[NSNumber numberWithBool:NO] contributorDetails:[NSNumber numberWithBool:NO] includeEntities:[NSNumber numberWithBool:YES] successBlock:^(NSArray* statuses){
+                        Database * db = [Database sharedDatabase];
+                        NSArray * guidHistory = [db guidHistoryForFolderId:folder.itemId];
+                        
+                        [folder clearCache];
+                        
+                        [db beginTransaction];
+                        for (NSDictionary* status in statuses) {
+
+                            Article* article = [[Article alloc]initWithGuid:[status objectForKey:@"id_str"]];
+                            [article setBody:[status objectForKey:@"text"]];
+                            [article setFolderId:folder.itemId];
+                            [article setAuthor:[[status objectForKey:@"user"] objectForKey:@"name"]];
+                            NSString* url = [NSString stringWithFormat:@"https://twitter.com/%@/status/%@",[[status objectForKey:@"user"] objectForKey:@"screen_name"],[status objectForKey:@"id_str"]];
+                            [article setLink:url];
+                            [db createArticle:folder.itemId article:article guidHistory:guidHistory];
+                            [article release];
+                            /*
+                            NSLog(@"%@ %@",[[status objectForKey:@"user"] objectForKey:@"name"],[status objectForKey:@"text"]);
+                            NSString* url = [NSString stringWithFormat:@"https://twitter.com/%@/status/%@",[[status objectForKey:@"user"] objectForKey:@"screen_name"],[status objectForKey:@"id_str"]];
+                            NSLog(@"%@",url);
+                             */
+                        
+                        }
+                        [db commitTransaction];
+
+                    }
+                                                    errorBlock:^(NSError* error) {}];
+                    
+                } errorBlock:^(NSError *error) {
+                    // Fail
+                }];
+                return;
+            }
+        }
+    }
+
+}
+
 
 /* pumpSubscriptionRefresh
  * Pick the folder at the head of the refresh queue and spawn a connection to

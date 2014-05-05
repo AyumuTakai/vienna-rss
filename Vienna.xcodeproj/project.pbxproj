@@ -1982,6 +1982,8 @@
 		1058C7A6FEA54F5311CA2CBB /* System frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				93FCF9081915F56A009DC29E /* Accounts.framework */,
+				93FCF9061915F55B009DC29E /* Social.framework */,
 				43502504165DCC410018EDB7 /* AppKit.framework */,
 				435021CD165DCB980018EDB7 /* Carbon.framework */,
 				435021CF165DCB980018EDB7 /* Cocoa.framework */,
@@ -2015,8 +2017,6 @@
 				93FCF90A1915F5BE009DC29E /* BAVPlistNode.m */,
 				93FCF90B1915F5BE009DC29E /* JSONSyntaxHighlight.m */,
 				93FCF90C1915F5BE009DC29E /* STHTTPRequest.m */,
-				93FCF9081915F56A009DC29E /* Accounts.framework */,
-				93FCF9061915F55B009DC29E /* Social.framework */,
 				93FCF8F41915F433009DC29E /* NSDateFormatter+STTwitter.m */,
 				93FCF8F51915F433009DC29E /* NSString+STTwitter.m */,
 				93FCF8F61915F433009DC29E /* STHTTPRequest+STTwitter.m */,

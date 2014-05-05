@@ -171,6 +171,9 @@
 	}
 }
 
+/* TwitterアカウントがMac登録済かチェック
+ *
+ */
 - (BOOL)hasTwitterAccount:(NSString*)username
 {
     // Twitter
@@ -182,6 +185,22 @@
         for (ACAccount* account in acc) {
             NSLog(@"%@",account.username);
             if ([account.username isEqualToString:username]) {
+                // Login
+                STTwitterAPI* _twitter = [STTwitterAPI twitterAPIOSWithAccount:account];
+                [_twitter verifyCredentialsWithSuccessBlock:^(NSString *username) {
+                    // Success
+                    [_twitter getStatusesHomeTimelineWithCount:@"10" sinceID:nil maxID:nil trimUser:[NSNumber numberWithBool:NO] excludeReplies:[NSNumber numberWithBool:NO] contributorDetails:[NSNumber numberWithBool:NO] includeEntities:[NSNumber numberWithBool:YES] successBlock:^(NSArray* statuses){
+                        for (NSDictionary* status in statuses) {
+                            NSLog(@"%@ %@",[[status objectForKey:@"user"] objectForKey:@"name"],[status objectForKey:@"text"]);
+                            NSString* url = [NSString stringWithFormat:@"https://twitter.com/%@/status/%@",[[status objectForKey:@"user"] objectForKey:@"screen_name"],[status objectForKey:@"id_str"]];
+                            NSLog(@"%@",url);
+                        }
+                    }
+                                                    errorBlock:^(NSError* error) {}];
+
+                } errorBlock:^(NSError *error) {
+                    // Fail
+                }];
                 return YES;
             }
         }
