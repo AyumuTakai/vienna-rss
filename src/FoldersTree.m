@@ -352,7 +352,7 @@
 		node = rootNode;
 	else
 		node = [rootNode nodeFromID:folderId];
-	if ([node folder] != nil && (IsRSSFolder([node folder]) || IsGoogleReaderFolder([node folder])))
+	if ([node folder] != nil && (IsRSSFolder([node folder]) || IsGoogleReaderFolder([node folder]) || IsTwitterFolder([node folder])))
 		[array addObject:[node folder]];
 	node = [node firstChild];
 	while (node != nil)
@@ -668,7 +668,7 @@
 	
 	TreeNode * node = [outlineView itemAtRow:[outlineView selectedRow]];
 
-	if (IsRSSFolder([node folder])||IsGoogleReaderFolder([node folder]))
+	if (IsRSSFolder([node folder])||IsGoogleReaderFolder([node folder])||IsTwitterFolder([node folder]))
 	{
 		NSString * urlString = [[node folder] homePage];
 		if (urlString && ![urlString isBlank])
@@ -1145,13 +1145,13 @@
 		TreeNode * node = [items objectAtIndex:index];
 		Folder * folder = [node folder];
 
-		if (IsRSSFolder(folder) || IsGoogleReaderFolder(folder) || IsSmartFolder(folder) || IsGroupFolder(folder) || IsSearchFolder(folder) || IsTrashFolder(folder))
+		if (IsRSSFolder(folder) || IsGoogleReaderFolder(folder) || IsTwitterFolder(folder) || IsSmartFolder(folder) || IsGroupFolder(folder) || IsSearchFolder(folder) || IsTrashFolder(folder))
 		{
 			[internalDragData addObject:[NSNumber numberWithInt:[node nodeId]]];
 			++countOfItems;
 		}
 
-		if (IsRSSFolder(folder)||IsGoogleReaderFolder(folder))
+		if (IsRSSFolder(folder)||IsGoogleReaderFolder(folder)||IsTwitterFolder(folder))
 		{
 			NSString * feedURL = [folder feedURL];
 			

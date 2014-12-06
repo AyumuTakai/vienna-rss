@@ -774,7 +774,7 @@ static Database * _sharedDatabase = nil;
 
 	// If no change to last update, do nothing
 	Folder * folder = [self folderFromID:folderId];
-	if (folder != nil && (IsRSSFolder(folder) || IsGoogleReaderFolder(folder)))
+	if (folder != nil && (IsRSSFolder(folder) || IsGoogleReaderFolder(folder) || IsTwitterFolder(folder)))
 	{
 		if ([[folder lastUpdate] isEqualToDate:lastUpdate])
 			return;
@@ -796,7 +796,7 @@ static Database * _sharedDatabase = nil;
 	
 	// If no change to last update string, do nothing
 	Folder * folder = [self folderFromID:folderId];
-	if (folder != nil && (IsRSSFolder(folder) || IsGoogleReaderFolder(folder)))
+	if (folder != nil && (IsRSSFolder(folder) || IsGoogleReaderFolder(folder) || IsTwitterFolder(folder)))
 	{
 		if ([[folder lastUpdateString] isEqualToString:lastUpdateString])
 			return;
@@ -843,6 +843,32 @@ static Database * _sharedDatabase = nil;
 		if (results != SQLITE_OK)
 			return -1;
 		
+		// Add this new folder to our internal cache
+		Folder * folder = [self folderFromID:folderId];
+		[folder setFeedURL:url];
+	}
+	return folderId;
+}
+
+
+/* addTwitterFolder
+ * Add an Twitter folder and return the ID of the new folder.
+ */
+-(NSInteger)addTwitterFolder:(NSString *)feedName underParent:(NSInteger)parentId afterChild:(NSInteger)predecessorId subscriptionURL:(NSString *)url
+{
+	NSInteger folderId = [self addFolder:parentId afterChild:predecessorId folderName:feedName type:MA_Twitter_Folder canAppendIndex:YES];
+	if (folderId != -1)
+	{
+		NSString * preparedURL = [Database prepareStringForQuery:url];
+		NSInteger results = [self executeSQLWithFormat:
+                             @"insert into rss_folders (folder_id, description, username, home_page, last_update_string, feed_url, bloglines_id) "
+                             "values (%ld, '', '', 'http://twitter.com', '', '%@', %d)",
+                             (long)folderId,
+                             preparedURL,
+                             0];
+		if (results != SQLITE_OK)
+			return -1;
+        
 		// Add this new folder to our internal cache
 		Folder * folder = [self folderFromID:folderId];
 		[folder setFeedURL:url];
@@ -954,7 +980,7 @@ static Database * _sharedDatabase = nil;
 		// folder, mark it so that somewhere down the line we'll request the
 		// image for the folder.
 		folder = [[[Folder alloc] initWithId:newItemId parentId:parentId name:name type:type] autorelease];
-		if ((type == MA_RSS_Folder)||(type == MA_GoogleReader_Folder))
+		if ((type == MA_RSS_Folder)||(type == MA_GoogleReader_Folder)||(type == MA_Twitter_Folder))
 			[folder setFlag:MA_FFlag_CheckForImage];
 		[foldersDict setObject:folder forKey:[NSNumber numberWithInt:newItemId]];
 		
@@ -992,7 +1018,7 @@ static Database * _sharedDatabase = nil;
 	NSTimeInterval interval = [lastUpdate timeIntervalSince1970];
 
 	// Require an image check if we're a subscription folder
-	if ((type == MA_RSS_Folder) || (type == MA_GoogleReader_Folder))
+	if ((type == MA_RSS_Folder) || (type == MA_GoogleReader_Folder)||(type == MA_Twitter_Folder))
 		flags = MA_FFlag_CheckForImage;
 
 	// Create the folder in the database. One thing to watch out for here that has
@@ -1055,7 +1081,7 @@ static Database * _sharedDatabase = nil;
 
 	// If this is an RSS feed, delete from the feeds
 	// and delete raw feed source
-	if (IsRSSFolder(folder) || IsGoogleReaderFolder(folder))
+	if (IsRSSFolder(folder) || IsGoogleReaderFolder(folder) || IsTwitterFolder(folder))
 	{
 		[self executeSQLWithFormat:@"delete from rss_folders where folder_id=%ld", folderId];
 		[self executeSQLWithFormat:@"delete from rss_guids where folder_id=%ld", folderId];
@@ -1306,7 +1332,7 @@ static Database * _sharedDatabase = nil;
 
 	// Adjust the child unread count for the old parent.
 	NSInteger adjustment = 0;
-	if (IsRSSFolder(folder) || IsGoogleReaderFolder(folder))
+	if (IsRSSFolder(folder) || IsGoogleReaderFolder(folder) ||  IsTwitterFolder(folder))
 		adjustment = [folder unreadCount];
 	else if ([folder isGroupFolder])
 		adjustment = [folder childUnreadCount];
@@ -2378,7 +2404,7 @@ static Database * _sharedDatabase = nil;
     // This is a good time to do a quick check to ensure that our
     // own count of unread is in sync with the folders count and fix
     // them if not.
-    if (folder && [filterString isEqualTo:@""] && (IsRSSFolder(folder) || IsGoogleReaderFolder(folder)))
+    if (folder && [filterString isEqualTo:@""] && (IsRSSFolder(folder) || IsGoogleReaderFolder(folder) || IsTwitterFolder(folder)))
     {
         if (unread_count != [folder unreadCount])
         {

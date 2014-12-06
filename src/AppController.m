@@ -2823,6 +2823,38 @@ static void MyScriptsFolderWatcherCallBack(FNMessage message, OptionBits flags, 
 		[articleController markAllReadByArray:arrayOfFolders withUndo:YES withRefresh:YES];
 }
 
+/* createNewTwitterAccount
+ *
+ */
+-(void)createNewTwitterAccount:(NSString*)username underFolder:(NSInteger)parentId afterChild:(NSInteger)predecessorId
+{
+	
+	// If the folder already exists, just select it.
+	Folder * folder = [db folderFromFeedURL:username];
+	if (folder != nil)
+	{
+		[browserView setActiveTabToPrimaryTab];
+		[foldersTree selectFolder:[folder itemId]];
+		return;
+	}
+
+
+	 //creates locally
+		[db beginTransaction];
+		NSInteger folderId = [db addTwitterFolder:username underParent:parentId afterChild:predecessorId subscriptionURL:username];
+		[db commitTransaction];
+        
+		if (folderId != -1)
+		{
+			[foldersTree selectFolder:folderId];
+			if (isAccessible(username))
+			{
+				Folder * folder = [db folderFromID:folderId];
+				[[RefreshManager sharedManager] refreshSubscriptionsAfterSubscribe:[NSArray arrayWithObject:folder] ignoringSubscriptionStatus:NO];
+			}
+		}
+}
+
 /* createNewGoogleReaderSubscription
  * Create a new Open Reader subscription for the specified URL under the given parent folder.
  */
@@ -3246,6 +3278,10 @@ static void MyScriptsFolderWatcherCallBack(FNMessage message, OptionBits flags, 
 			alertBody = [NSString stringWithFormat:NSLocalizedString(@"Delete Open Reader RSS feed text", nil), [folder name]];
 			alertTitle = NSLocalizedString(@"Delete Open Reader RSS feed", nil);
 		}
+        else if (IsTwitterFolder(folder)){
+			alertBody = [NSString stringWithFormat:NSLocalizedString(@"Delete Twitter feed text", nil), [folder name]];
+			alertTitle = NSLocalizedString(@"Delete Twitter feed", nil);
+        }
 		else if (IsGroupFolder(folder))
 		{
 			alertBody = [NSString stringWithFormat:NSLocalizedString(@"Delete group folder text", nil), [folder name]];
@@ -3413,7 +3449,7 @@ static void MyScriptsFolderWatcherCallBack(FNMessage message, OptionBits flags, 
 {
 	Article * thisArticle = [self selectedArticle];
 	Folder * folder = (thisArticle) ? [db folderFromID:[thisArticle folderId]] : [db folderFromID:[foldersTree actualSelection]];
-	if (thisArticle || IsRSSFolder(folder) || IsGoogleReaderFolder(folder))
+	if (thisArticle || IsRSSFolder(folder) || IsGoogleReaderFolder(folder) || IsTwitterFolder(folder))
 		[self openURLFromString:[folder homePage] inPreferredBrowser:YES];
 }
 
@@ -3424,7 +3460,7 @@ static void MyScriptsFolderWatcherCallBack(FNMessage message, OptionBits flags, 
 {
 	Article * thisArticle = [self selectedArticle];
 	Folder * folder = (thisArticle) ? [db folderFromID:[thisArticle folderId]] : [db folderFromID:[foldersTree actualSelection]];
-	if (thisArticle || IsRSSFolder(folder) || IsGoogleReaderFolder(folder))
+	if (thisArticle || IsRSSFolder(folder) || IsGoogleReaderFolder(folder) || IsTwitterFolder(folder))
 		[self openURLFromString:[folder homePage] inPreferredBrowser:NO];
 }
 
@@ -4162,7 +4198,7 @@ static void MyScriptsFolderWatcherCallBack(FNMessage message, OptionBits flags, 
 	if (theAction == @selector(getInfo:))
 	{
 		Folder * folder = [db folderFromID:[foldersTree actualSelection]];
-		*validateFlag = (IsRSSFolder(folder) || IsGoogleReaderFolder(folder)) && isMainWindowVisible;
+		*validateFlag = (IsRSSFolder(folder) || IsGoogleReaderFolder(folder) || IsTwitterFolder(folder)) && isMainWindowVisible;
 		return YES;
 	}
 	if (theAction == @selector(forceRefreshSelectedSubscriptions:)) {
@@ -4316,25 +4352,25 @@ static void MyScriptsFolderWatcherCallBack(FNMessage message, OptionBits flags, 
 			else
 				[menuItem setTitle:NSLocalizedString(@"Unsubscribe", nil)];
 		}
-		return folder && (IsRSSFolder(folder) || IsGoogleReaderFolder(folder)) && ![db readOnly] && isMainWindowVisible;
+		return folder && (IsRSSFolder(folder) || IsGoogleReaderFolder(folder) || IsTwitterFolder(folder)) && ![db readOnly] && isMainWindowVisible;
 	}
 	else if (theAction == @selector(useCurrentStyleForArticles:))
 	{
 		Folder * folder = [db folderFromID:[foldersTree actualSelection]];
-		if (folder && (IsRSSFolder(folder) || IsGoogleReaderFolder(folder)) && ![folder loadsFullHTML])
+		if (folder && (IsRSSFolder(folder) || IsGoogleReaderFolder(folder) || IsTwitterFolder(folder)) && ![folder loadsFullHTML])
 			[menuItem setState:NSOnState];
 		else
 			[menuItem setState:NSOffState];
-		return folder && (IsRSSFolder(folder) || IsGoogleReaderFolder(folder)) && ![db readOnly] && isMainWindowVisible;
+		return folder && (IsRSSFolder(folder) || IsGoogleReaderFolder(folder) || IsTwitterFolder(folder)) && ![db readOnly] && isMainWindowVisible;
 	}
 	else if (theAction == @selector(useWebPageForArticles:))
 	{
 		Folder * folder = [db folderFromID:[foldersTree actualSelection]];
-		if (folder && (IsRSSFolder(folder) || IsGoogleReaderFolder(folder)) && [folder loadsFullHTML])
+		if (folder && (IsRSSFolder(folder) || IsGoogleReaderFolder(folder) || IsTwitterFolder(folder)) && [folder loadsFullHTML])
 			[menuItem setState:NSOnState];
 		else
 			[menuItem setState:NSOffState];
-		return folder && (IsRSSFolder(folder) || IsGoogleReaderFolder(folder)) && ![db readOnly] && isMainWindowVisible;
+		return folder && (IsRSSFolder(folder) || IsGoogleReaderFolder(folder) ||IsTwitterFolder(folder)) && ![db readOnly] && isMainWindowVisible;
 	}
 	else if (theAction == @selector(deleteFolder:))
 	{
@@ -4348,7 +4384,7 @@ static void MyScriptsFolderWatcherCallBack(FNMessage message, OptionBits flags, 
 	else if (theAction == @selector(refreshSelectedSubscriptions:))
 	{
 		Folder * folder = [db folderFromID:[foldersTree actualSelection]];
-		return folder && (IsRSSFolder(folder) || IsGroupFolder(folder) || IsGoogleReaderFolder(folder)) && ![db readOnly];
+		return folder && (IsRSSFolder(folder) || IsGroupFolder(folder) || IsGoogleReaderFolder(folder) || IsTwitterFolder(folder)) && ![db readOnly];
 	}
 	else if (theAction == @selector(refreshAllFolderIcons:))
 	{
@@ -4380,7 +4416,7 @@ static void MyScriptsFolderWatcherCallBack(FNMessage message, OptionBits flags, 
 	{
 		Article * thisArticle = [self selectedArticle];
 		Folder * folder = (thisArticle) ? [db folderFromID:[thisArticle folderId]] : [db folderFromID:[foldersTree actualSelection]];
-		return folder && (thisArticle || IsRSSFolder(folder) || IsGoogleReaderFolder(folder)) && ([folder homePage] && ![[folder homePage] isBlank] && isMainWindowVisible);
+		return folder && (thisArticle || IsRSSFolder(folder) || IsGoogleReaderFolder(folder) || IsTwitterFolder(folder)) && ([folder homePage] && ![[folder homePage] isBlank] && isMainWindowVisible);
 	}
 	else if ((theAction == @selector(viewArticlePages:)) || (theAction == @selector(viewArticlePagesInAlternateBrowser:)))
 	{

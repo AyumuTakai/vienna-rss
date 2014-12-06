@@ -355,7 +355,7 @@ static NSArray * iconArray = nil;
 		return [[Folder _iconArray] objectAtIndex:MA_SearchFolderIcon];
 	//	if (IsGoogleReaderFolder(self))
 	//	return [[Folder _iconArray] objectAtIndex:MA_GoogleReaderFolderIcon];
-	if (IsRSSFolder(self) || IsGoogleReaderFolder(self))
+	if (IsRSSFolder(self) || IsGoogleReaderFolder(self) || IsTwitterFolder(self))
 	{
 		// Try the folder icon cache.
 		NSImage * imagePtr = nil;
@@ -368,7 +368,10 @@ static NSArray * iconArray = nil;
 		NSImage *altIcon;
 		if (IsRSSFolder(self)) {
 			altIcon = [[Folder _iconArray] objectAtIndex:MA_RSSFeedIcon];
-		} else {
+		} else if(IsTwitterFolder(self)) {
+			altIcon = [[Folder _iconArray] objectAtIndex:MA_RSSFeedIcon];
+        }
+        else {
 			altIcon = [[Folder _iconArray] objectAtIndex:MA_GoogleReaderFolderIcon];
 		}
 		return (imagePtr) ? imagePtr : altIcon;
@@ -383,7 +386,7 @@ static NSArray * iconArray = nil;
  */
 -(BOOL)hasCachedImage
 {
-	if (!IsRSSFolder(self) && !IsGoogleReaderFolder(self))
+	if (!IsRSSFolder(self) && !IsGoogleReaderFolder(self) && !IsTwitterFolder(self))
 		return NO;
 	NSImage * imagePtr = nil;
 	if ([self feedURL])
@@ -403,6 +406,8 @@ static NSArray * iconArray = nil;
 		return [[Folder _iconArray] objectAtIndex:MA_RSSFeedIcon];
 	if (IsGoogleReaderFolder(self))
 		return [[Folder _iconArray] objectAtIndex:MA_GoogleReaderFolderIcon];
+    if (IsTwitterFolder(self))
+        return [[Folder _iconArray] objectAtIndex:MA_RSSFeedIcon];
 	return [self image];
 }
 

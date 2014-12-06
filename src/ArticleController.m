@@ -725,6 +725,16 @@
                 
 			}
 		}
+		else if (IsTwitterFolder(folder))
+		{
+			if (undoFlag)
+				[refArray addObjectsFromArray:[db arrayOfUnreadArticles:folderId]];
+			if ([db markFolderRead:folderId])
+			{
+				[foldersTree updateFolder:folderId recurseToParents:YES];
+                
+			}
+		}
 		else if (IsGoogleReaderFolder(folder))
 		{
 			NSArray * articleArray = [db arrayOfUnreadArticlesRefs:folderId];
@@ -804,7 +814,7 @@
 		[foldersTree updateFolder:lastFolderId recurseToParents:YES];
 		if (lastFolderId == currentFolderId)
 			needRefilter = YES;
-        if (!IsRSSFolder([db folderFromID:currentFolderId])&&!IsGoogleReaderFolder([db folderFromID:currentFolderId]))
+        if (!IsRSSFolder([db folderFromID:currentFolderId])&&!IsGoogleReaderFolder([db folderFromID:currentFolderId])&&!IsTwitterFolder([db folderFromID:currentFolderId]))
             [mainArticleView refreshFolder:MA_Refresh_ReloadFromDatabase];
         else if (needRefilter)
             [mainArticleView refreshFolder:MA_Refresh_ReapplyFilter];

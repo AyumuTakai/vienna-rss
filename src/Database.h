@@ -118,6 +118,10 @@
 +(NSString *)untitledFeedFolderName;
 -(NSInteger)addRSSFolder:(NSString *)feedName underParent:(NSInteger)parentId afterChild:(NSInteger)predecessorId subscriptionURL:(NSString *)url;
 
+// Twitter folder functions
+-(NSInteger)addTwitterFolder:(NSString *)feedName underParent:(NSInteger)parentId afterChild:(NSInteger)predecessorId subscriptionURL:(NSString *)url;
+
+
 // Open Reader folder functions
 -(NSInteger)addGoogleReaderFolder:(NSString *)feedName underParent:(NSInteger)parentId afterChild:(NSInteger)predecessorId subscriptionURL:(NSString *)url;
 

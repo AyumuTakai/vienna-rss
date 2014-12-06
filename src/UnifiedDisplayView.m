@@ -588,7 +588,7 @@
 		NSInteger folderId = [(Folder *)[note object] itemId];
 		NSInteger controllerFolderId = [controller currentFolderId];
 		Folder * controllerFolder = [[Database sharedDatabase] folderFromID:controllerFolderId];
-		if (folderId == controllerFolderId || ( !IsRSSFolder(controllerFolder) && !IsGoogleReaderFolder(controllerFolder) ))
+		if (folderId == controllerFolderId || ( !IsRSSFolder(controllerFolder) && !IsGoogleReaderFolder(controllerFolder) && !IsTwitterFolder(controllerFolder) ))
 		{
 			[self refreshCurrentFolder];
 		}
